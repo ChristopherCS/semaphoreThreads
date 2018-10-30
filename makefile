@@ -8,7 +8,7 @@ main : main.o
 main.o : main.h
 
 
-.PHONY : clean remake
+.PHONY : clean remake semrem fsem
 
 
 clean: 
@@ -17,3 +17,9 @@ clean:
 remake :
 	make clean
 	make
+
+semrem :
+	sudo rm -f /dev/shm/sem.semScreen /dev/shm/sem.semKeyboard
+
+fsem : 
+	sudo ls /dev/shm
