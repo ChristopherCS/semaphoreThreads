@@ -4,7 +4,7 @@
 // the number of deadlocks it had to recover from, and prints this to screen when it exits.
 
 
-#define _POSIX_C_SOURCE 199309L // Needed to expose the CLOCK_REALTIME definition
+//#define _POSIX_C_SOURCE 199309L // Needed to expose the CLOCK_REALTIME definition
 #include <time.h> // For the timespec struct. Used in sem_timedwait.
 #include <semaphore.h>
 #include <stdio.h>
