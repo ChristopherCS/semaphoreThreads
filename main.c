@@ -13,35 +13,39 @@
 #include <stdlib.h> 
 #include <sys/wait.h> 
 #include <unistd.h> 
+#include <pthread.h>
 #include "main.h"
 
 
 int main(void){
 	sem_t *semS = NULL, *semK = NULL;
-	char *semSName = "/semScreen", *semKName = "/semKeyboard";
-	int pid;
-	pid_t waitPid;
+	pthread_t threadIds[9];
+	int nthreads = 9;
+	thArgs args;
+
 	int i = 0, status, ret = 0;
 	
 
-	//sem_open both semaphores
-	semS = openSemaphore(semS, semSName);
-	semK = openSemaphore(semK, semKName);
-	
-  // fork 9 processes   
-  do {
-    if( (pid = fork()) == 0){
-			process(semS, semK, i);
-		}else {
-			i++;
-    }
-  } while( i < 9 && pid > 0);
-  if(i >= 9) { // stop forking around
-     // after all die, use single call or loop based on ids saved above
-		while((waitPid = wait(&status))> 0);
-    sem_unlink(semSName);
-		sem_unlink(semKName);
-  }
+	//Init both semaphores
+	semS = initSemaphore(semS);
+	semK = initSemaphore(semK);
+
+  // spawn 9 threads  
+  for(i = 0; i < nthreads; i++){
+		args.index = i+1;
+		args.semK = semK;
+		args.semS = semS;
+
+		pthread_create(&threadIds[i], NULL, process, &args);
+	}
+
+	for(i=0; i < nthreads; i++){
+		pthread_join(threadIds[i], NULL);
+	}
+
+	closeSemaphores(semS, semK);
+    
+  
 return ret;
    
 //End Mother process
@@ -50,8 +54,11 @@ return ret;
 }
 
 
-void process(sem_t * semS, sem_t *semK, int index){
-
+void process(void *thdArgStruct){
+thArgs *args = (thArgs *)thdArgStruct;
+int index = args->index;
+sem_t *semS = args->semS;
+sem_t *semK = args->semK;
 	
 // sem_open both semaphores if necessary
 	int deadlocks = 0;
@@ -75,7 +82,7 @@ void process(sem_t * semS, sem_t *semK, int index){
   //	   read keyboard
 	if(fgets(input, 80, stdin) != NULL){
 	  // echo what was typed
-		printf("-> %s\n\n", input);
+		printf("-> %s\n", input);
 	}else{
 		printf("\n");
 		input[0] = ' ';
@@ -87,10 +94,9 @@ void process(sem_t * semS, sem_t *semK, int index){
 	returnSemaphore(semK);
 	}
 	// 	 prompt "This process had " + count + " deadlocks "
-	printf("\n** Process # %d, had %d deadlocks **\n\n", index, deadlocks);
+	printf("** Process # %d, had %d deadlocks **\n", index, deadlocks);
 
 	// exit
-	closeSemaphores(semS, semK);
 	free(input);
 }
 
@@ -156,12 +162,21 @@ void getWaitTimeNano(struct timespec *tSpec){
 	tSpec->tv_nsec = nanos;	
 }
 
+sem_t *initSemaphore(sem_t *semaphore){
+	
+	if((semaphore = sem_init(semaphore, 0, 1)) != 0 ){
+		perror("Unable to initiate semaphore\n");
+		exit(1);
+	}
+	
+	return(semaphore);
+}
 
 sem_t *openSemaphore(sem_t *semaphore, char *semaphoreName){
 	
 	semaphore = sem_open(semaphoreName, O_CREAT, 0644, 1);
 	if(semaphore == SEM_FAILED){
-		perror("Failed to open semaphore");
+		perror("Failed to open semaphore\n");
 		exit(1);
 	}
 	return(semaphore);
@@ -173,7 +188,7 @@ void returnSemaphore(sem_t *sema){
 	error += sem_post(sema);
 
 	if(error){
-		perror("Unable to return semaphore from process");
+		perror("Unable to return semaphore from process\n");
 		exit(1);
 	}
 
@@ -182,10 +197,10 @@ void returnSemaphore(sem_t *sema){
 void closeSemaphores(sem_t *semS, sem_t *semK){
 	int error = 0;
 
-	error += sem_close(semS);
-	error += sem_close(semK);
+	error += sem_destroy(semS);
+	error += sem_destroy(semK);
 	if(error){
-		perror("Unable to close semaphore");
+		perror("Unable to close semaphore\n");
 		exit(1);
 	}
 }
