@@ -18,23 +18,24 @@
 
 
 int main(void){
-	sem_t *semS = NULL, *semK = NULL;
+	sem_t semS, semK;
 	pthread_t threadIds[9];
 	int nthreads = 9;
 	thArgs args;
 
-	int i = 0, status, ret = 0;
+	int i = 0, ret = 0;
 	
-
+	printf("About to init semaphores.\n");
 	//Init both semaphores
-	semS = initSemaphore(semS);
-	semK = initSemaphore(semK);
+	initSemaphore(&semS);
+	initSemaphore(&semK);
 
+	printf("Semaphores Initialized.");
   // spawn 9 threads  
   for(i = 0; i < nthreads; i++){
 		args.index = i+1;
-		args.semK = semK;
-		args.semS = semS;
+		args.semK = &semK;
+		args.semS = &semS;
 
 		pthread_create(&threadIds[i], NULL, process, &args);
 	}
@@ -43,7 +44,7 @@ int main(void){
 		pthread_join(threadIds[i], NULL);
 	}
 
-	closeSemaphores(semS, semK);
+	closeSemaphores(&semS, &semK);
     
   
 return ret;
@@ -54,16 +55,19 @@ return ret;
 }
 
 
-void process(void *thdArgStruct){
+void *process(void *thdArgStruct){
+
+printf("A Thread was spawned.");
 thArgs *args = (thArgs *)thdArgStruct;
 int index = args->index;
 sem_t *semS = args->semS;
 sem_t *semK = args->semK;
+void *ret = NULL;
 	
 // sem_open both semaphores if necessary
 	int deadlocks = 0;
 	char *input = (char *)calloc(sizeof(char), 128); // For getting input from the command line]
-
+	struct timespec sleepTime = {.tv_nsec = 10000, .tv_sec = 0};
 // 	until quit, while not q
 	while(input[0] != 'q'){
 	// Even
@@ -74,8 +78,8 @@ sem_t *semK = args->semK;
 		deadlocks += getSemaphores(semK, semS, index);
 	}
 	// Just sleep for a second because otherwise the 
-	// incoming thread overwrites the outgoing threads report. (sometimes).
-	sleep(1);
+	// incoming thread  the outgoing threads report. (sometimes).
+	nanosleep(&sleepTime, NULL);
 	//	   prompt "enter < 80 characters or q to quit: "
 	printf("Enter < 80 characters or q to quit: ");
 
@@ -98,6 +102,7 @@ sem_t *semK = args->semK;
 
 	// exit
 	free(input);
+	return(ret); 	
 }
 
 
@@ -162,14 +167,11 @@ void getWaitTimeNano(struct timespec *tSpec){
 	tSpec->tv_nsec = nanos;	
 }
 
-sem_t *initSemaphore(sem_t *semaphore){
-	
-	if((semaphore = sem_init(semaphore, 0, 1)) != 0 ){
+void initSemaphore(sem_t *semaphore){
+	if( sem_init(semaphore, 0, 1) ){
 		perror("Unable to initiate semaphore\n");
 		exit(1);
 	}
-	
-	return(semaphore);
 }
 
 sem_t *openSemaphore(sem_t *semaphore, char *semaphoreName){

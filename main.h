@@ -11,8 +11,9 @@ typedef struct {
 	int index;
 } thArgs;
 
-void process(void *thdArgStruct);
+void *process(void *thdArgStruct);
 sem_t *openSemaphore(sem_t *semaphore, char *semaphoreName);
+void initSemaphore(sem_t *semaphore);
 int getSemaphores(sem_t *semS, sem_t *semK, int index);
 void returnSemaphore(sem_t *sema);
 void closeSemaphores(sem_t *semS, sem_t *semK);
