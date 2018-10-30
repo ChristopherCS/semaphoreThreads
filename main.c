@@ -25,12 +25,10 @@ int main(void){
 
 	int i = 0, ret = 0;
 	
-	printf("About to init semaphores.\n");
 	//Init both semaphores
 	initSemaphore(&semS);
 	initSemaphore(&semK);
 
-	printf("Semaphores Initialized.");
   // spawn 9 threads  
   for(i = 0; i < nthreads; i++){
 		args.index = i+1;
@@ -57,7 +55,6 @@ return ret;
 
 void *process(void *thdArgStruct){
 
-printf("A Thread was spawned.");
 thArgs *args = (thArgs *)thdArgStruct;
 int index = args->index;
 sem_t *semS = args->semS;
@@ -67,7 +64,11 @@ void *ret = NULL;
 // sem_open both semaphores if necessary
 	int deadlocks = 0;
 	char *input = (char *)calloc(sizeof(char), 128); // For getting input from the command line]
-	struct timespec sleepTime = {.tv_nsec = 10000, .tv_sec = 0};
+	struct timespec sleepTime = {.tv_nsec = 100000, .tv_sec = 0};
+
+// Sleep for a sec because I'm not getting deadlocks.
+nanosleep(&sleepTime, NULL);
+
 // 	until quit, while not q
 	while(input[0] != 'q'){
 	// Even
