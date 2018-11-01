@@ -21,7 +21,7 @@ int main(void){
 	sem_t semS, semK;
 	pthread_t threadIds[9];
 	int nthreads = 9;
-	thArgs args;
+	thArgs args[9];
 
 	int i = 0, ret = 0;
 	
@@ -31,11 +31,11 @@ int main(void){
 
   // spawn 9 threads  
   for(i = 0; i < nthreads; i++){
-		args.index = i+1;
-		args.semK = &semK;
-		args.semS = &semS;
+		args[i].index = i+1;
+		args[i].semK = &semK;
+		args[i].semS = &semS;
 
-		pthread_create(&threadIds[i], NULL, process, &args);
+		pthread_create(&threadIds[i], NULL, process, &args[i]);
 	}
 
 	for(i=0; i < nthreads; i++){
@@ -99,7 +99,7 @@ nanosleep(&sleepTime, NULL);
 	returnSemaphore(semK);
 	}
 	// 	 prompt "This process had " + count + " deadlocks "
-	printf("** Process # %d, had %d deadlocks **\n", index, deadlocks);
+	printf("** Thread # %d, had %d deadlocks **\n", index, deadlocks);
 
 	// exit
 	free(input);
